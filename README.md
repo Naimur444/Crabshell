@@ -42,8 +42,8 @@ Crabshell is an unofficial browser interface for the [Claude Code](https://docs.
 ## Run it
 
 ```bash
-git clone https://github.com/Naimur444/Crabshell.git
-cd Crabshell
+git clone https://github.com/Naimur444/crabshell.git
+cd crabshell
 npm install
 npm start
 ```
