@@ -2,6 +2,8 @@
 
 **A new shell for Claude Code, in your browser.**
 
+![Crabshell demo: asking Claude for a changelog line and getting a copyable draft](docs/demo.gif)
+
 Crabshell is an unofficial browser interface for the [Claude Code](https://docs.claude.com/en/docs/claude-code) CLI that runs on your own machine. Every session is your installed `claude` CLI, so it uses your existing login, settings, MCP servers, skills, hooks and `CLAUDE.md` files. No API key is needed.
 
 > **Unofficial community project.** Not affiliated with, endorsed by or supported by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.
@@ -18,6 +20,19 @@ Crabshell is an unofficial browser interface for the [Claude Code](https://docs.
 - **Drafts and copy:** text Claude drafts for you to send shows as a card with a Copy button; replies and code blocks can be copied too.
 - **Quick starts:** one-click presets with their own folder, model, permission mode and extra instructions (for example a "Code review" or "Support" session).
 - Light and dark themes, a collapsible sidebar, keyboard navigation, and a layout that works on a phone.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Draft replies with Copy buttons, dark theme](docs/screenshots/01-drafts-dark.png) | ![A bug fix with a one-line tool summary, light theme](docs/screenshots/02-fix-light.png) |
+| **Drafts** you can copy in one click | **Chat stays clean**: tool calls collapse into one line |
+| ![Activity tab with tool inputs and outputs](docs/screenshots/03-activity-dark.png) | ![A markdown table in a reply, light theme](docs/screenshots/04-table-light.png) |
+| **Activity tab** with every tool call's input and output | Tables, code and markdown, in light or dark |
+| ![Permission prompt with Allow, Always allow and Deny](docs/screenshots/05-permission-dark.png) | ![Permission mode picker in the chat box](docs/screenshots/06-mode-picker-dark.png) |
+| **Permission prompts** as cards | **Model and permission mode** right in the chat box |
+
+<p align="center"><img src="docs/screenshots/07-mobile-dark.png" alt="Crabshell on a phone-sized screen" width="280"><br><sub>Works on a phone-sized screen too</sub></p>
 
 ## Requirements
 

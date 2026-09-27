@@ -208,7 +208,8 @@ app.get('/api/dirs', (req, res) => {
     const dirs = fs.readdirSync(base, { withFileTypes: true })
       .filter(d => d.isDirectory() && !d.name.startsWith('.'))
       .map(d => d.name).sort().slice(0, 300);
-    res.json({ path: path.resolve(base), parent: path.dirname(path.resolve(base)), dirs, home: os.homedir() });
+    let homeReal = os.homedir(); try { homeReal = fs.realpathSync(homeReal); } catch {}
+    res.json({ path: path.resolve(base), parent: path.dirname(path.resolve(base)), dirs, home: os.homedir(), homeReal });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 

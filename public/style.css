@@ -310,6 +310,7 @@ kbd { font-size: 11px; padding: 0 4px; border: 1px solid var(--border); border-b
 .msg.assistant th:first-child, .msg.assistant td:first-child { border-left: 0; }
 .msg.assistant th:last-child, .msg.assistant td:last-child { border-right: 0; }
 .msg.assistant th { text-align: left; font-weight: 600; background: var(--code-bg); white-space: nowrap; }
+.msg.assistant td code { white-space: nowrap; }
 .msg.assistant td, .msg.assistant th { border: 1px solid var(--border); padding: 6px 10px; }
 .msg.assistant blockquote { margin: 0 0 12px; padding-left: 12px; border-left: 3px solid var(--border-strong); color: var(--text-2); }
 .msg.streaming { white-space: pre-wrap; }
@@ -631,6 +632,9 @@ dialog { border-radius: 16px; }
   .field-row { flex-direction: column; }
 }
 @media (max-width: 600px) {
+  #composer-meta { display: none; }
+  .cf-pick { padding: 0 4px 0 6px; font-size: 12.5px; }
+  .composer-foot { gap: 6px; }
   #btn-restart .lbl, .tb-actions .status span { display: none; }
   #btn-restart { width: 30px; padding: 0; }
   .tb-actions .status { width: 24px; padding: 0; justify-content: center; }

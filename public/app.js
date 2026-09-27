@@ -450,7 +450,8 @@ function showHeader() {
   $('#subtitle').textContent = current ? `${presetName ? presetName + ' · ' : ''}${shortPath(current.cwd || '')}` : '';
   $('#subtitle').title = current ? `${current.cwd || ''}\nSession ${current.sessionId}` : '';
   renderPickers();
-  $('#composer-meta').textContent = current && !live ? 'Not running · sending resumes it' : '';
+  $('#composer-meta').textContent = current && !live ? 'Not running' : '';
+  $('#composer-meta').title = current && !live ? 'Sending a message resumes this session' : '';
   $('#input').disabled = !current; $('#btn-attach').disabled = !current; updateSend();
   $('#input').placeholder = current ? 'Message Claude' : 'Start or open a session to begin';
 }
@@ -596,10 +597,10 @@ $('#pick-mode').onclick = e => (ctxAnchor === e.currentTarget && !ctx.hidden ? c
 
 // ---------- sidebar ----------
 // Shorten the server's home folder to ~ (works for macOS, Linux and custom homes).
-let HOME_DIR = null;
+let HOME_DIRS = []; // the home folder as given, and resolved (they differ when it sits behind a symlink)
 const shortPath = p => {
   p = p || '';
-  if (HOME_DIR && (p === HOME_DIR || p.startsWith(HOME_DIR + '/'))) return '~' + p.slice(HOME_DIR.length);
+  for (const h of HOME_DIRS) if (p === h || p.startsWith(h + '/')) return '~' + p.slice(h.length);
   return p.replace(/^\/(Users|home)\/[^/]+/, '~');
 };
 function when(t) {
@@ -1091,7 +1092,10 @@ if (!TOKEN) askToken();
 connect();
 refreshSidebar();
 loadPresets();
-api('/api/dirs').then(r => { if (r.home) { HOME_DIR = r.home.replace(/\/$/, ''); renderSessions(); renderPresets(); if (current) showHeader(); } }).catch(() => {});
+api('/api/dirs').then(r => {
+  HOME_DIRS = [...new Set([r.home, r.homeReal].filter(Boolean).map(h => h.replace(/\/$/, '')))];
+  renderSessions(); renderPresets(); if (current) showHeader();
+}).catch(() => {});
 checkAuth();
 setInterval(refreshSidebar, 15000);
 if (window.Notification && Notification.permission === 'default') document.addEventListener('click', () => Notification.requestPermission(), { once: true });
