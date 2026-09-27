@@ -595,7 +595,13 @@ $('#pick-model').onclick = e => (ctxAnchor === e.currentTarget && !ctx.hidden ? 
 $('#pick-mode').onclick = e => (ctxAnchor === e.currentTarget && !ctx.hidden ? closeCtx() : openPicker(e.currentTarget, 'mode'));
 
 // ---------- sidebar ----------
-const shortPath = p => (p || '').replace(/^\/Users\/[^/]+/, '~');
+// Shorten the server's home folder to ~ (works for macOS, Linux and custom homes).
+let HOME_DIR = null;
+const shortPath = p => {
+  p = p || '';
+  if (HOME_DIR && (p === HOME_DIR || p.startsWith(HOME_DIR + '/'))) return '~' + p.slice(HOME_DIR.length);
+  return p.replace(/^\/(Users|home)\/[^/]+/, '~');
+};
 function when(t) {
   const s = (Date.now() - t) / 1000;
   if (s < 60) return 'now';
@@ -1085,6 +1091,7 @@ if (!TOKEN) askToken();
 connect();
 refreshSidebar();
 loadPresets();
+api('/api/dirs').then(r => { if (r.home) { HOME_DIR = r.home.replace(/\/$/, ''); renderSessions(); renderPresets(); if (current) showHeader(); } }).catch(() => {});
 checkAuth();
 setInterval(refreshSidebar, 15000);
 if (window.Notification && Notification.permission === 'default') document.addEventListener('click', () => Notification.requestPermission(), { once: true });
