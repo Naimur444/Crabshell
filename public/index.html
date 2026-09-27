@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Unofficial browser UI for the Claude Code CLI. Not affiliated with Anthropic.">
+<title>Claude Code</title>
+<script>
+  // Apply the saved theme before first paint to avoid a flash.
+  try { const t = localStorage.getItem('ccw-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}
+  try { if (localStorage.getItem('ccw-sidebar') === 'closed') document.documentElement.classList.add('sb-closed'); } catch {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-logo" viewBox="0 107 512 320"><path fill="#D97757" stroke="none" fill-rule="evenodd" d="M64 107h384v127h64v66h-64v64H64v-64H0v-66h64zM128 173h32v61h-32zM352 173h32v61h-32zM96 364h32v63H96zM160 364h32v63h-32zM320 364h32v63h-32zM384 364h32v63h-32z"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5M9 8V2M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="13" height="13" x="8" y="8" rx="2"/><path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+    <symbol id="i-parent" viewBox="0 0 24 24"><path d="M14 9 9 4 4 9"/><path d="M20 20h-7a4 4 0 0 1-4-4V4"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 17 6-6-6-6M12 19h7"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.17 6.81a2.83 2.83 0 0 0-4-4L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <aside id="sidebar" aria-label="Sessions">
+    <div class="sb-head">
+      <div class="brand"><svg class="brand-mark" aria-hidden="true"><use href="#i-logo"/></svg>Claude Code</div>
+      <button id="btn-sb-close" class="icon-btn" aria-label="Collapse sidebar" title="Collapse sidebar (⌘B)"><svg><use href="#i-panel"/></svg></button>
+    </div>
+
+    <div class="sb-actions">
+      <button id="btn-new" class="btn btn-secondary btn-block"><svg><use href="#i-plus"/></svg>New session</button>
+    </div>
+
+    <div class="sb-quick">
+      <div class="sb-quick-head">
+        <span>Quick start</span>
+        <button id="btn-presets" class="icon-btn sm" aria-label="Manage quick starts" title="Manage quick starts"><svg><use href="#i-gear"/></svg></button>
+      </div>
+      <div id="preset-list"></div>
+    </div>
+
+    <div class="sb-actions">
+      <label class="search">
+        <svg><use href="#i-search"/></svg>
+        <input id="search" type="search" placeholder="Search sessions" aria-label="Search sessions" autocomplete="off">
+      </label>
+    </div>
+
+    <nav id="session-nav" class="sb-list"></nav>
+
+    <div class="sb-foot">
+      <button id="btn-mcp-global" class="btn btn-ghost btn-sm"><svg><use href="#i-plug"/></svg>MCP servers</button>
+      <div class="seg" role="radiogroup" aria-label="Theme">
+        <button role="radio" data-theme-set="system" aria-label="System theme" title="System"><svg><use href="#i-monitor"/></svg></button>
+        <button role="radio" data-theme-set="light" aria-label="Light theme" title="Light"><svg><use href="#i-sun"/></svg></button>
+        <button role="radio" data-theme-set="dark" aria-label="Dark theme" title="Dark"><svg><use href="#i-moon"/></svg></button>
+      </div>
+    </div>
+  </aside>
+  <div id="sb-backdrop" hidden></div>
+
+  <main id="main">
+    <div id="auth-banner" class="banner" role="alert" hidden></div>
+
+    <header id="topbar">
+      <button id="btn-sb-open" class="icon-btn" aria-label="Show sidebar" title="Show sidebar (⌘B)"><svg><use href="#i-panel"/></svg></button>
+      <div class="tb-title">
+        <h1 id="title">No session open</h1>
+        <div id="subtitle"></div>
+      </div>
+      <div class="tb-actions" id="controls" hidden>
+        <span id="state" class="status"><i></i><span>Idle</span></span>
+        <button id="btn-restart" class="btn btn-secondary btn-sm" title="Replace the CLI process and resume this session"><svg><use href="#i-restart"/></svg><span class="lbl">Restart</span></button>
+        <div class="menu-wrap">
+          <button id="btn-actions" class="btn btn-secondary btn-sm" aria-haspopup="menu" aria-expanded="false" aria-controls="actions-menu">Actions<svg class="chev"><use href="#i-chevron"/></svg></button>
+          <div id="actions-menu" class="menu" role="menu" aria-labelledby="btn-actions" hidden></div>
+        </div>
+      </div>
+    </header>
+
+    <div id="tabs-bar" hidden>
+      <div class="thread tabs" role="tablist" aria-label="View">
+        <button role="tab" id="tab-chat" aria-selected="true" aria-controls="messages">Chat</button>
+        <button role="tab" id="tab-activity" aria-selected="false" aria-controls="activity" tabindex="-1">Activity<span id="act-count" class="count" hidden></span><span id="act-live" class="live-dot" hidden></span></button>
+      </div>
+    </div>
+
+    <section id="messages" role="tabpanel" aria-labelledby="tab-chat" aria-live="polite">
+      <div class="thread" id="thread">
+        <div class="empty">
+          <svg class="empty-mark" aria-hidden="true"><use href="#i-logo"/></svg>
+          <h2>Start a session</h2>
+          <p>Runs your local <code>claude</code> CLI with your login, settings and MCP servers.</p>
+          <p class="disclaimer">Unofficial community project. Not affiliated with or endorsed by Anthropic.</p>
+          <button class="btn btn-primary" onclick="document.getElementById('btn-new').click()"><svg><use href="#i-plus"/></svg>New session</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="activity" role="tabpanel" aria-labelledby="tab-activity" hidden>
+      <div class="thread" id="activity-list"></div>
+    </section>
+
+    <div id="working" hidden>
+      <div class="thread working-row">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span id="working-text">Thinking…</span>
+        <span id="working-time"></span>
+        <button id="working-stop" class="btn btn-ghost btn-xs" type="button" title="Interrupt (Esc)"><svg><use href="#i-pause"/></svg>Stop</button>
+      </div>
+    </div>
+
+    <form id="composer" class="thread">
+      <div class="composer-box">
+        <div id="attachments" class="attachments" hidden></div>
+        <div id="drop-hint" hidden>Drop files to attach</div>
+        <textarea id="input" rows="1" placeholder="Message Claude" aria-label="Message" disabled></textarea>
+        <div class="composer-foot">
+          <button id="btn-attach" class="icon-btn" type="button" aria-label="Attach files" title="Attach files (or paste / drop them)" disabled><svg><use href="#i-clip"/></svg></button>
+          <input id="file-input" type="file" multiple hidden>
+          <div class="cf-pickers" id="cf-pickers" hidden>
+            <button type="button" id="pick-model" class="cf-pick" aria-haspopup="menu" aria-expanded="false" title="Model"><span></span><svg class="chev"><use href="#i-chevron"/></svg></button>
+            <button type="button" id="pick-mode" class="cf-pick" aria-haspopup="menu" aria-expanded="false" title="Permission mode"><span></span><svg class="chev"><use href="#i-chevron"/></svg></button>
+          </div>
+          <span id="composer-meta"></span>
+          <span class="hint"><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span>
+          <button id="btn-send" class="send" type="submit" aria-label="Send" disabled><svg><use href="#i-up"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </main>
+</div>
+
+<dialog id="dlg-new" aria-labelledby="dlg-new-title">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head">
+      <h3 id="dlg-new-title">New session</h3>
+      <button value="cancel" class="icon-btn" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div class="field">
+      <label for="new-cwd">Working directory</label>
+      <div class="input-row">
+        <input id="new-cwd" spellcheck="false" autocomplete="off">
+        <button type="button" id="new-up" class="btn btn-secondary btn-sm" title="Parent folder"><svg><use href="#i-parent"/></svg>Up</button>
+      </div>
+      <div id="dir-list" role="listbox" aria-label="Folders"></div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="new-model">Model</label>
+        <select id="new-model">
+          <option value="">Default</option><option value="opus">Opus</option><option value="sonnet">Sonnet</option><option value="haiku">Haiku</option><option value="fable">Fable</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="new-mode">Permission mode</label>
+        <select id="new-mode">
+          <option value="">Default (from settings)</option>
+          <option value="default">Ask every time</option>
+          <option value="acceptEdits">Accept edits</option>
+          <option value="auto">Auto</option>
+          <option value="plan">Plan</option>
+          <option value="bypassPermissions">Bypass permissions</option>
+        </select>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button value="cancel" class="btn btn-secondary">Cancel</button>
+      <button id="new-start" value="start" class="btn btn-primary">Start session</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-mcp" aria-labelledby="dlg-mcp-title">
+  <div class="dlg">
+    <div class="dlg-head">
+      <div>
+        <h3 id="dlg-mcp-title">MCP servers</h3>
+        <p class="muted" id="mcp-note"></p>
+      </div>
+      <button id="mcp-close" class="icon-btn" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div id="mcp-list"></div>
+    <div class="dlg-foot">
+      <button id="mcp-check" class="btn btn-ghost btn-sm">Run config check</button>
+      <button id="mcp-refresh" class="btn btn-secondary btn-sm"><svg><use href="#i-refresh"/></svg>Refresh</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlg-delete" aria-labelledby="dlg-delete-title">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head">
+      <h3 id="dlg-delete-title">Delete session?</h3>
+    </div>
+    <p class="dlg-body"><strong id="delete-name"></strong> will be removed from your session history<span id="delete-live"> and its running process will be stopped</span>.<span id="delete-undo"> You can undo this right after.</span></p>
+    <div class="dlg-foot">
+      <button value="cancel" class="btn btn-secondary" autofocus>Cancel</button>
+      <button value="delete" class="btn btn-danger-solid">Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-image" class="lightbox" aria-label="Image preview">
+  <form method="dialog"><button class="icon-btn lb-close" aria-label="Close"><svg><use href="#i-x"/></svg></button></form>
+  <img id="lightbox-img" alt="">
+</dialog>
+
+<dialog id="dlg-presets" class="wide" aria-labelledby="dlg-presets-title">
+  <form class="dlg" id="preset-form">
+    <div class="dlg-head">
+      <div>
+        <h3 id="dlg-presets-title">Quick starts</h3>
+        <p class="muted">Start a session with its own folder, model and instructions in one click.</p>
+      </div>
+      <button type="button" id="presets-close" class="icon-btn" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div class="preset-bar">
+      <select id="preset-pick" aria-label="Quick start to edit"></select>
+      <button type="button" id="preset-add" class="btn btn-secondary btn-sm"><svg><use href="#i-plus"/></svg>New</button>
+      <button type="button" id="preset-del" class="btn btn-ghost btn-sm danger-text"><svg><use href="#i-trash"/></svg>Delete</button>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="pf-name">Name</label><input id="pf-name" maxlength="60" required></div>
+      <div class="field"><label for="pf-icon">Icon</label><select id="pf-icon"><option value="headset">Headset</option><option value="zap">Bolt</option></select></div>
+    </div>
+    <div class="field"><label for="pf-cwd">Working directory</label><input id="pf-cwd" spellcheck="false" class="mono"></div>
+    <div class="field-row">
+      <div class="field"><label for="pf-model">Model</label><select id="pf-model"><option value="">Default</option><option value="opus">Opus</option><option value="sonnet">Sonnet</option><option value="haiku">Haiku</option><option value="fable">Fable</option></select></div>
+      <div class="field"><label for="pf-mode">Permission mode</label><select id="pf-mode"><option value="">Default (from settings)</option><option value="default">Ask every time</option><option value="acceptEdits">Accept edits</option><option value="auto">Auto</option><option value="plan">Plan</option><option value="bypassPermissions">Bypass permissions</option></select></div>
+    </div>
+    <div class="field">
+      <label for="pf-instructions">Instructions</label>
+      <textarea id="pf-instructions" rows="11" spellcheck="true"></textarea>
+      <span class="help">Added to Claude's system prompt for every session started from this quick start. Edits apply the next time such a session starts, resumes or restarts.</span>
+    </div>
+    <div class="field">
+      <label for="pf-starter">Starter message <span class="muted">(optional)</span></label>
+      <textarea id="pf-starter" rows="2"></textarea>
+      <span class="help">Put in the message box when the session opens. Not sent automatically.</span>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" id="presets-cancel" class="btn btn-secondary">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="ctx-menu" class="menu ctx" role="menu" hidden></div>
+
+<div id="toast" role="status" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

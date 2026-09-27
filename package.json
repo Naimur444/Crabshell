@@ -1,0 +1,29 @@
+{
+  "name": "crabshell",
+  "version": "0.1.0",
+  "description": "A new shell for Claude Code, in your browser. Unofficial local web UI for the Claude Code CLI.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "web-ui",
+    "mcp",
+    "crabshell"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "ws": "^8.22.0"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Naimur444/Crabshell.git"
+  }
+}
