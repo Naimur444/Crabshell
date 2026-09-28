@@ -733,6 +733,7 @@ async function openStored(s) {
 let usage = null;                       // latest { status, binding, windows: { five_hour: { utilization, resetsAt } }, updatedAt }
 const USAGE_LABELS = { five_hour: '5-hour', seven_day: 'Weekly', seven_day_opus: 'Opus wk', seven_day_sonnet: 'Sonnet wk' };
 const USAGE_ORDER = ['five_hour', 'seven_day', 'seven_day_opus', 'seven_day_sonnet'];
+const USAGE_SHORT = { five_hour: '5h', seven_day: 'Wk', seven_day_opus: 'Opus', seven_day_sonnet: 'Sonnet' };
 const pctOf = u => Math.round((u <= 1.5 ? u * 100 : u) || 0);  // CLI sends a 0..1 fraction
 function ago(ms) { const s = (Date.now() - ms) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${s / 60 | 0}m ago` : `${s / 3600 | 0}h ago`; }
 function until(sec) {
@@ -754,7 +755,8 @@ function renderUsage() {
   const keys = Object.keys(w).sort((a, b) => (USAGE_ORDER.indexOf(a) + 1 || 99) - (USAGE_ORDER.indexOf(b) + 1 || 99));
   $('#usage-updated').textContent = usage?.updatedAt ? ago(usage.updatedAt) : '';
   $('#usage-updated').title = usage?.updatedAt ? `Last updated ${new Date(usage.updatedAt).toLocaleString()}` : '';
-  if (!keys.length) { rows.append(el('div', 'usage-empty', 'No data yet. Send a message or press refresh.')); return; }
+  const summary = $('#usage-summary'); summary.innerHTML = '';
+  if (!keys.length) { rows.append(el('div', 'usage-empty', 'No data yet. Send a message or press refresh.')); summary.textContent = 'no data'; return; }
   for (const k of keys) {
     const { utilization, resetsAt } = w[k];
     const stale = resetsAt && resetsAt * 1000 < Date.now();   // window has reset since we last heard
@@ -769,6 +771,8 @@ function renderUsage() {
     row.title = stale ? 'This window has reset. Refresh to see current usage.'
       : `${USAGE_LABELS[k] || k}: ${pct}% used${resetsAt ? `\nResets ${new Date(resetsAt * 1000).toLocaleString()}` : ''}`;
     rows.append(row);
+    if (summary.childNodes.length) summary.append(' · ');
+    summary.append(el('span', full ? 'full' : warn ? 'warn' : '', `${USAGE_SHORT[k] || USAGE_LABELS[k] || k} ${stale ? '—' : pct + '%'}`));
   }
 }
 // One note in the chat when a window crosses 75%, and a clear one when the limit is hit.
@@ -790,6 +794,16 @@ $('#usage-refresh').onclick = async () => {
   catch (e) { toast(e.message); }
   finally { box.classList.remove('loading'); }
 };
+function setUsageCollapsed(on) {
+  $('#usage').classList.toggle('collapsed', on);
+  const t = $('#usage-toggle');
+  t.setAttribute('aria-expanded', String(!on));
+  t.title = on ? 'Expand' : 'Collapse'; t.setAttribute('aria-label', on ? 'Expand plan usage' : 'Collapse plan usage');
+  try { localStorage.setItem('ccw-usage-collapsed', on ? '1' : '0'); } catch {}
+}
+$('#usage-toggle').onclick = () => setUsageCollapsed(!$('#usage').classList.contains('collapsed'));
+$('.usage-head > span').onclick = () => setUsageCollapsed(!$('#usage').classList.contains('collapsed'));
+try { setUsageCollapsed(localStorage.getItem('ccw-usage-collapsed') === '1'); } catch {}
 setInterval(() => usage && renderUsage(), 30000);
 
 // ---------- quick starts ----------
