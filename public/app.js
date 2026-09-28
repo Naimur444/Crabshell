@@ -194,7 +194,21 @@ function addAssistantText(text) {
 }
 
 // ---------- copy ----------
+// Fallback for pages that aren't a "secure context" (e.g. http://claude.test), where
+// navigator.clipboard is unavailable: select hidden content and use the copy command.
+function legacyCopy(plain, html) {
+  const box = document.createElement(html ? 'div' : 'textarea');
+  box.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;white-space:pre-wrap';
+  if (html) box.innerHTML = html; else box.value = plain;
+  document.body.append(box);
+  if (html) { const r = document.createRange(); r.selectNodeContents(box); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+  else box.select();
+  const ok = document.execCommand('copy');
+  getSelection().removeAllRanges(); box.remove();
+  if (!ok) throw new Error('the browser blocked copying');
+}
 async function copyToClipboard(plain, html) {
+  if (!window.isSecureContext || !navigator.clipboard) return legacyCopy(plain, html);
   if (html && window.ClipboardItem) {
     // Rich + plain, so pasting into Gmail keeps formatting and a plain field gets clean text.
     await navigator.clipboard.write([new ClipboardItem({
