@@ -70,6 +70,7 @@ function call(msg) {
 function handle(e) {
   if (e.ev === 'reply') { const r = waiting.get(e.id); waiting.delete(e.id); return r?.(e); }
   if (e.ev === 'subscribed') return onSubscribed(e);
+  if (e.ev === 'usage') { usage = e.usage; renderUsage(); return warnUsage(); }
   if (!current || e.liveId !== current.liveId) return;
   // While the transcript is loading, hold live events so they land after it, not above it.
   if (historyQueue) return historyQueue.push(e);
@@ -728,6 +729,69 @@ async function openStored(s) {
   msgs.scrollTop = msgs.scrollHeight;
 }
 
+// ---------- plan usage ----------
+let usage = null;                       // latest { status, binding, windows: { five_hour: { utilization, resetsAt } }, updatedAt }
+const USAGE_LABELS = { five_hour: '5-hour', seven_day: 'Weekly', seven_day_opus: 'Opus wk', seven_day_sonnet: 'Sonnet wk' };
+const USAGE_ORDER = ['five_hour', 'seven_day', 'seven_day_opus', 'seven_day_sonnet'];
+const pctOf = u => Math.round((u <= 1.5 ? u * 100 : u) || 0);  // CLI sends a 0..1 fraction
+function ago(ms) { const s = (Date.now() - ms) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${s / 60 | 0}m ago` : `${s / 3600 | 0}h ago`; }
+function until(sec) {
+  const s = sec - Date.now() / 1000;
+  if (s <= 0) return 'now';
+  const h = s / 3600 | 0, m = Math.ceil((s % 3600) / 60);
+  return h >= 24 ? `${h / 24 | 0}d ${h % 24}h` : h ? `${h}h ${m}m` : `${m}m`;
+}
+function resetText(sec) {
+  const d = new Date(sec * 1000), soon = sec - Date.now() / 1000 < 86400;
+  const t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return soon ? `resets ${t} · in ${until(sec)}` : `resets ${d.toLocaleDateString([], { weekday: 'short' })} ${t}`;
+}
+function renderUsage() {
+  const box = $('#usage'), rows = $('#usage-rows');
+  if (usage?.unavailable) { box.hidden = true; return; }
+  box.hidden = false; rows.innerHTML = '';
+  const w = usage?.windows || {};
+  const keys = Object.keys(w).sort((a, b) => (USAGE_ORDER.indexOf(a) + 1 || 99) - (USAGE_ORDER.indexOf(b) + 1 || 99));
+  $('#usage-updated').textContent = usage?.updatedAt ? ago(usage.updatedAt) : '';
+  $('#usage-updated').title = usage?.updatedAt ? `Last updated ${new Date(usage.updatedAt).toLocaleString()}` : '';
+  if (!keys.length) { rows.append(el('div', 'usage-empty', 'No data yet. Send a message or press refresh.')); return; }
+  for (const k of keys) {
+    const { utilization, resetsAt } = w[k];
+    const stale = resetsAt && resetsAt * 1000 < Date.now();   // window has reset since we last heard
+    const pct = stale ? 0 : pctOf(utilization);
+    const isBinding = k === usage.binding;
+    const full = !stale && (pct >= 100 || (isBinding && usage.status === 'rejected'));
+    const warn = !stale && !full && (pct >= 75 || (isBinding && usage.status === 'allowed_warning'));
+    const row = el('div', 'usage-row' + (full ? ' full' : warn ? ' warn' : '') + (stale ? ' stale' : ''));
+    const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${Math.min(100, pct)}%`; bar.append(fill);
+    row.append(el('span', 'lbl', USAGE_LABELS[k] || k.replace(/_/g, ' ')), bar, el('span', 'pct', stale ? '—' : `${pct}%`),
+      el('span', 'reset', stale ? 'Reset since last update · refresh' : resetsAt ? resetText(resetsAt) : ''));
+    row.title = stale ? 'This window has reset. Refresh to see current usage.'
+      : `${USAGE_LABELS[k] || k}: ${pct}% used${resetsAt ? `\nResets ${new Date(resetsAt * 1000).toLocaleString()}` : ''}`;
+    rows.append(row);
+  }
+}
+// One note in the chat when a window crosses 75%, and a clear one when the limit is hit.
+function warnUsage() {
+  if (!usage?.windows || !current?.liveId) return;
+  let seen; try { seen = JSON.parse(localStorage.getItem('ccw-usage-warned') || '{}'); } catch { seen = {}; }
+  for (const [k, { utilization, resetsAt }] of Object.entries(usage.windows)) {
+    const pct = pctOf(utilization), name = (USAGE_LABELS[k] || k).toLowerCase(), key = `${k}:${resetsAt}`;
+    const hit = pct >= 100 || (k === usage.binding && usage.status === 'rejected');
+    if (hit && seen[key] !== 'full') { note(`Plan limit reached for your ${name} window. It resets ${resetsAt ? `at ${new Date(resetsAt * 1000).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}` : 'soon'}.`, true); seen[key] = 'full'; }
+    else if (!hit && pct >= 75 && !seen[key]) { note(`${pct}% of your ${name} limit used · ${resetsAt ? resetText(resetsAt) : ''}`); seen[key] = 'warn'; }
+  }
+  try { localStorage.setItem('ccw-usage-warned', JSON.stringify(seen)); } catch {}
+}
+$('#usage-refresh').onclick = async () => {
+  const box = $('#usage'); if (box.classList.contains('loading')) return;
+  box.classList.add('loading');
+  try { usage = await apiSend('POST', '/api/usage/refresh'); renderUsage(); }
+  catch (e) { toast(e.message); }
+  finally { box.classList.remove('loading'); }
+};
+setInterval(() => usage && renderUsage(), 30000);
+
 // ---------- quick starts ----------
 let presets = [];
 async function loadPresets() { presets = await api('/api/presets').catch(() => presets); renderPresets(); renderSessions(); }
@@ -1106,6 +1170,7 @@ if (!TOKEN) askToken();
 connect();
 refreshSidebar();
 loadPresets();
+api('/api/usage').then(u => { usage = u; renderUsage(); }).catch(() => {});
 api('/api/dirs').then(r => {
   HOME_DIRS = [...new Set([r.home, r.homeReal].filter(Boolean).map(h => h.replace(/\/$/, '')))];
   renderSessions(); renderPresets(); if (current) showHeader();

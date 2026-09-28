@@ -389,6 +389,7 @@ class LiveSession {
       if (msg.model) this.model = msg.model;
       if (msg.permissionMode) this.permissionMode = msg.permissionMode;
     }
+    if (msg.type === 'rate_limit_event') recordUsage(msg.rate_limit_info);
     if (msg.type === 'result') this.setState('idle');
     this.emit({ ev: 'cli', msg });
   }
@@ -460,6 +461,63 @@ class LiveSession {
 }
 
 app.get('/api/live', (req, res) => res.json([...live_sessions.values()].map(s => s.describe())));
+
+// ---------- plan usage ----------
+// The CLI reports subscription limits in "rate_limit_event" messages during a chat turn:
+// percent used and reset time per window (5-hour, weekly, ...). We keep the latest one.
+// API-key logins don't get these, so the UI stays hidden for them.
+const USAGE_FILE = path.join(STATE_DIR, 'usage.json');
+let lastUsage = readJson(USAGE_FILE, null);
+
+function recordUsage(info) {
+  if (!info) return;
+  const windows = info.unifiedWindows
+    || (info.rateLimitType ? { [info.rateLimitType]: { utilization: info.utilization, resetsAt: info.resetsAt } } : {});
+  if (!Object.keys(windows).length) return;
+  lastUsage = {
+    status: info.status || 'allowed',
+    binding: info.rateLimitType || null,   // the window that currently limits you
+    isUsingOverage: !!info.isUsingOverage,
+    windows,
+    updatedAt: Date.now(),
+  };
+  try { writeJson(USAGE_FILE, lastUsage); } catch {}
+  const msg = JSON.stringify({ ev: 'usage', usage: lastUsage });
+  for (const c of wss.clients) if (c.readyState === 1) c.send(msg);
+}
+
+// Refresh without a real chat: one tiny request (no tools, no MCP, a one-line system
+// prompt, not saved to history). Costs a fraction of a cent of quota.
+let refreshing = null, lastRefresh = 0;
+function refreshUsage() {
+  if (refreshing) return refreshing;
+  if (Date.now() - lastRefresh < 20000 && lastUsage) return Promise.resolve(lastUsage);
+  lastRefresh = Date.now();
+  refreshing = new Promise(resolve => {
+    const p = spawn(CLAUDE_BIN, ['-p', '.', '--model', 'haiku', '--tools', '', '--system-prompt', 'Reply with a single period.',
+      '--strict-mcp-config', '--disable-slash-commands', '--setting-sources', '', '--no-session-persistence',
+      '--output-format', 'stream-json', '--verbose'], { cwd: os.tmpdir(), env: childEnv() });
+    let buf = '', got = false;
+    const finish = () => { clearTimeout(timer); refreshing = null; resolve(got ? lastUsage : null); };
+    const timer = setTimeout(() => { p.kill(); }, 30000);
+    p.stdout.on('data', d => {
+      buf += d; let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 1);
+        try { const m = JSON.parse(line); if (m.type === 'rate_limit_event') { recordUsage(m.rate_limit_info); got = true; } } catch {}
+      }
+    });
+    p.on('error', finish); p.on('close', finish);
+  });
+  return refreshing;
+}
+
+app.get('/api/usage', (req, res) => res.json(lastUsage || {}));
+app.post('/api/usage/refresh', async (req, res) => {
+  const u = await refreshUsage();
+  if (!u) return res.status(502).json({ error: 'No plan usage came back. API-key logins do not report subscription limits.' });
+  res.json(u);
+});
 
 // ---------- websocket ----------
 

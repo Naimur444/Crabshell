@@ -84,6 +84,15 @@
 
     <nav id="session-nav" class="sb-list"></nav>
 
+    <section id="usage" class="usage" aria-label="Plan usage" hidden>
+      <div class="usage-head">
+        <span>Plan usage</span>
+        <span id="usage-updated" class="usage-updated"></span>
+        <button id="usage-refresh" class="icon-btn sm" aria-label="Refresh plan usage" title="Refresh plan usage"><svg><use href="#i-refresh"/></svg></button>
+      </div>
+      <div id="usage-rows"></div>
+    </section>
+
     <div class="sb-foot">
       <button id="btn-mcp-global" class="btn btn-ghost btn-sm"><svg><use href="#i-plug"/></svg>MCP servers</button>
       <div class="seg" role="radiogroup" aria-label="Theme">

@@ -15,6 +15,7 @@ Crabshell is an unofficial browser interface for the [Claude Code](https://docs.
 - **Chat / Activity tabs:** tool and MCP calls go to an Activity tab, with a one-line summary in the chat that links to them.
 - **Permission prompts** as cards: Allow, Always allow, Deny, Deny with feedback. You get a browser notification when the tab is in the background.
 - **Model and permission mode** pickers in the chat box, including Plan and Bypass.
+- **Plan usage:** your 5-hour and weekly subscription usage with reset times, updated after every reply, with a refresh button (a tiny request, not saved to history). Warns in the chat at 75% and when a limit is hit. Hidden for API-key logins, which don't report limits.
 - **MCP panel:** live status per server, with Reconnect and Enable/Disable, or a `claude mcp list` health check.
 - **Attachments:** paste, drag and drop, or pick files. Images go to Claude directly (large ones are downscaled); other files are saved locally and passed by path.
 - **Drafts and copy:** text Claude drafts for you to send shows as a card with a Copy button; replies and code blocks can be copied too.
